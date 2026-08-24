@@ -19,7 +19,7 @@ fi
 # OXP 120Hz Devices
 OXP_120_LIST="ONEXPLAYER F1:ONEXPLAYER F1 EVA-01"
 if [[ ":$OXP_120_LIST:" =~ ":$SYS_ID:"  ]]; then
-  PANEL_TYPE=external
+  PANEL_TYPE=internal
   ORIENTATION=left
 
   # Set refresh rate range and enable refresh rate switching
