@@ -26,8 +26,8 @@ if [[ ":$OXP_120_LIST:" =~ ":$SYS_ID:"  ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=40,120
 fi
 
-# OXP X1 Devices
-OXP_X1_LIST="ONEXPLAYER X1 i"
+# OXP X1 Devices (Intel, including the X1 Air which uses the same portrait panel)
+OXP_X1_LIST="ONEXPLAYER X1 i:ONEXPLAYER X1Air"
 if [[ ":$OXP_X1_LIST:" =~ ":$SYS_ID:"  ]]; then
   PANEL_TYPE=internal
   USE_ROTATION_SHADER=1
