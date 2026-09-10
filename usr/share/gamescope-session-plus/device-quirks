@@ -358,7 +358,7 @@ if [[ ":Retroid Pocket Mini:Retroid Pocket Mini V2:" =~ ":$SYS_ID:" ]]; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
-  FAKE_OUTPUT_MM=65x75
+  FAKE_OUTPUT_MM=177x100
 
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
