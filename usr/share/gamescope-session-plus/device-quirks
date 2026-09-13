@@ -73,7 +73,7 @@ fi
 # AYANEO AIR and SLIDE
 AIR_LIST="AIR:AIR Pro:AIR Plus:SLIDE:"
 if [[ ":$AIR_LIST:" =~ ":$SYS_ID:"  ]]; then
-  PANEL_TYPE=external
+  PANEL_TYPE=internal
   ORIENTATION=left
 fi
 
