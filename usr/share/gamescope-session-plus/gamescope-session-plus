@@ -333,6 +333,13 @@ if [[ ":Galileo:" =~ ":$SYS_ID:"  ]]; then
   fi
 fi
 
+# Start Discover Overlay flatpak if installed - https://github.com/trigg/Discover
+if command -v flatpak > /dev/null; then
+  if flatpak list --columns=application | grep -q '^io\.github\.trigg\.discover_overlay$'; then
+    env DISPLAY=:0 flatpak run io.github.trigg.discover_overlay 2>&1 &
+  fi
+fi
+
 # For compatibility with older user configuration overrides
 if [ -n "$STEAMCMD" ]; then
 	CLIENTCMD=$STEAMCMD
