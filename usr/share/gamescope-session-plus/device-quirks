@@ -35,6 +35,11 @@ if [[ ":$OXP_X1_LIST:" =~ ":$SYS_ID:"  ]]; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
 
+  # The EVA-02 needs shader-based panel rotation.
+  if [[ "$SYS_ID" == "ONEXPLAYER X1Pro EVA-02" ]]; then
+    FORCE_COMPOSITION_ROTATION=1
+  fi
+
   # Set refresh rate range and enable refresh rate switching
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
