@@ -28,6 +28,11 @@ if [[ ":$OXP_120_LIST:" =~ ":$SYS_ID:"  ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=40,120
 fi
 
+# ONEXPLAYER X1Pro EVA-02 (Intel) needs shader-based panel rotation.
+if [[ "$SYS_ID" == "ONEXPLAYER X1Pro EVA-02" ]]; then
+  FORCE_COMPOSITION_ROTATION=1
+fi
+
 # OXP X1 Devices (Intel, including the X1 Air and X1Pro EVA-02 which use the same portrait panel)
 OXP_X1_LIST="ONEXPLAYER X1 i:ONEXPLAYER X1Air:ONEXPLAYER X1Pro EVA-02"
 if [[ ":$OXP_X1_LIST:" =~ ":$SYS_ID:"  ]]; then
