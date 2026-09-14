@@ -207,10 +207,13 @@ if [ -z "$GAMESCOPECMD" ]; then
 		CUSTOM_REFRESH_RATES_OPTION="--custom-refresh-rates $CUSTOM_REFRESH_RATES"
 	fi
 
-	FORCE_COMPOSITION_ROTATION_OPTION=""
-	if [ "$FORCE_COMPOSITION_ROTATION" = "1" ] && gamescope_has_option "--force-composition-rotation"; then
-		FORCE_COMPOSITION_ROTATION_OPTION="--force-composition-rotation"
-	fi
+    if [ "$FORCE_COMPOSITION_ROTATION" = "1" ]; then
+        if gamescope_has_option "--force-composition-rotation"; then
+            FORCE_COMPOSITION_ROTATION_OPTION="--force-composition-rotation"
+        elif gamescope_has_option "--use-rotation-shader"; then
+            FORCE_COMPOSITION_ROTATION_OPTION="--use-rotation-shader 1"
+        fi
+    fi
 
 	BACKEND_OPTION=""
 	# Check if an older GPU that needs the SDL workaround is in use.
