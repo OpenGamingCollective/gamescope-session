@@ -241,7 +241,7 @@ if [ -f "$xg_mobile_file_path" ]; then
 
     # XG Mobile 2021: NVIDIA 3080
     if lspci -nn | grep -q "10de:249c"; then
-      export VULKAN_ADAPTER="1002:249c"
+      export VULKAN_ADAPTER="10de:249c"
     fi
   fi
 fi
