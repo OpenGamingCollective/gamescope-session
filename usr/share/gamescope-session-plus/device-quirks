@@ -335,11 +335,11 @@ fi
 
 if [[ ":KONKR Pocket FIT:" =~ ":$SYS_ID:" ]]; then
   ORIENTATION=right
-  CUSTOM_REFRESH_RATES=144
+  CUSTOM_REFRESH_RATES=60,90,120,144
   OUTPUT_CONNECTOR='*,DSI-1'
   FAKE_OUTPUT_MM=177x100
 
-  export STEAM_DISPLAY_REFRESH_LIMITS=144
+  export STEAM_DISPLAY_REFRESH_LIMITS=60,90,120,144
 fi
 
 if [[ ":Retroid Pocket 5:Retroid Pocket Flip2:" =~ ":$SYS_ID:" ]]; then
