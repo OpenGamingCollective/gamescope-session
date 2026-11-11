@@ -1,13 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 
 set -x
 
 SYS_ID="$(cat /sys/devices/virtual/dmi/id/product_name)"
 
-declare -r CLIENT=$1
-declare -r CLIENT_CONFIG_DIR_USR=/usr/share/gamescope-session-plus/sessions.d
-declare -r CLIENT_CONFIG_DIR_ETC=/etc/gamescope-session-plus/sessions.d
-declare -r CLIENT_CONFIG_DIR_LOCAL="${XDG_CONFIG_HOME:-$HOME/.config}/gamescope-session-plus/sessions.d"
+readonly CLIENT="$1"
+readonly CLIENT_CONFIG_DIR_USR=/usr/share/gamescope-session-plus/sessions.d
+readonly CLIENT_CONFIG_DIR_ETC=/etc/gamescope-session-plus/sessions.d
+readonly CLIENT_CONFIG_DIR_LOCAL="${XDG_CONFIG_HOME:-$HOME/.config}/gamescope-session-plus/sessions.d"
 
 # default empty session recovery function
 short_session_recover() {
@@ -116,27 +116,27 @@ fi
 # Source client app specific configuration files
 set -a
 for i in ${CLIENT_CONFIG_DIR_USR}/${CLIENT} ${CLIENT_CONFIG_DIR_ETC}/${CLIENT} ${CLIENT_CONFIG_DIR_LOCAL}/${CLIENT}; do
-	[[ -f "${i}" ]] && . "${i}"
+	[ -f "${i}" ] && . "${i}"
 done
 set +a
 
 # Source user configuration from /etc/environment.d and ~/.config/environment.d
 set -a
 for i in /etc/environment.d/*.conf; do
-	[[ -f "${i}" ]] && . "${i}"
+	[ -f "${i}" ] && . "${i}"
 done
 for i in "${HOME}"/.config/environment.d/*.conf; do
-	[[ -f "${i}" ]] && . "${i}"
+	[ -f "${i}" ] && . "${i}"
 done
 set +a
 
 # Setup socket for gamescope
 # Create run directory file for startup and stats sockets
-tmpdir="$([[ -n ${XDG_RUNTIME_DIR+x} ]] && mktemp -p "$XDG_RUNTIME_DIR" -d -t gamescope.XXXXXXX)"
+tmpdir="$([ -n "${XDG_RUNTIME_DIR+x}" ] && mktemp -p "$XDG_RUNTIME_DIR" -d -t gamescope.XXXXXXX)"
 socket="${tmpdir:+$tmpdir/startup.socket}"
 stats="${tmpdir:+$tmpdir/stats.pipe}"
 # Fail early if we don't have a proper runtime directory setup
-if [[ -z $tmpdir || -z ${XDG_RUNTIME_DIR+x} ]]; then
+if [ -z "$tmpdir" ] || [ -z "${XDG_RUNTIME_DIR+x}" ]; then
 	echo >&2 "!! Failed to find run directory in which to create stats session sockets (is \$XDG_RUNTIME_DIR set?)"
 	exit 0
 fi
@@ -234,7 +234,7 @@ if [ -z "$GAMESCOPECMD" ]; then
 	fi
 
 	HDR_OPTIONS=""
-	if [ "$ENABLE_GAMESCOPE_HDR" == "1" ] && [ "$ENABLE_GAMESCOPE_WSI" == "1" ] && gamescope_has_option "--hdr-enabled" && gamescope_has_option "--hdr-itm-enable"; then
+	if [ "$ENABLE_GAMESCOPE_HDR" = "1" ] && [ "$ENABLE_GAMESCOPE_WSI" = "1" ] && gamescope_has_option "--hdr-enabled" && gamescope_has_option "--hdr-itm-enable"; then
 		HDR_OPTIONS="--hdr-enabled --hdr-itm-enable"
 		export ENABLE_HDR_WSI=1
 		export DXVK_HDR=1
@@ -269,22 +269,22 @@ if [ -z "$GAMESCOPECMD" ]; then
 fi
 
 # Add socket and stats read
-GAMESCOPECMD+=" -R $socket -T $stats"
+GAMESCOPECMD="$GAMESCOPECMD -R $socket -T $stats"
 
 # Add custom vulkan adapter if specified
 if [ -n "$VULKAN_ADAPTER" ]; then
-	GAMESCOPECMD+=" --prefer-vk-device $VULKAN_ADAPTER"
+	GAMESCOPECMD="$GAMESCOPECMD --prefer-vk-device $VULKAN_ADAPTER"
 fi
 
 # Attempt to fallback to a desktop session if something goes wrong too many times
 short_session_tracker_file="/tmp/chimeraos-short-session-tracker"
 short_session_duration=60
 short_session_count_before_reset=5
-SECONDS=0
+short_session_start=$(date +%s)
 
 short_session_count=$(wc <"$short_session_tracker_file" -l)
 
-if [[ "$short_session_count" -ge "$short_session_count_before_reset" ]]; then
+if [ "$short_session_count" -ge "$short_session_count_before_reset" ]; then
 	echo >&2 "gamescope-session-plus: detected broken ${CLIENT} or gamescope failure, will try to reset the session"
 
 	short_session_recover
@@ -298,14 +298,20 @@ fi
 $GAMESCOPECMD &
 gamescope_pid="$!"
 
-if read -r -t 5 response_x_display response_wl_display <>"$socket"; then
+if response=$( { timeout 5 sh -c '
+	exec 3<>"$1"
+	read -r response_x_display response_wl_display <&3 || exit 1
+	printf "%s\n%s\n" "$response_x_display" "$response_wl_display"
+' sh "$socket"; } 2>/dev/null ); then
+	response_x_display=$(printf '%s\n' "$response" | sed -n '1p')
+	response_wl_display=$(printf '%s\n' "$response" | sed -n '2p')
 	export DISPLAY="$response_x_display"
 	export GAMESCOPE_WAYLAND_DISPLAY="$response_wl_display"
 	# We're done!
 else
 	echo "gamescope failed" >>"$short_session_tracker_file"
 	kill -9 "$gamescope_pid"
-	wait -n "$gamescope_pid"
+	wait "$gamescope_pid" 2>/dev/null
 	exit 1
 	# Systemd or Session manager will have to restart session
 fi
@@ -327,7 +333,7 @@ fi
 
 # Handle Galileo Mura Correction
 # This is applied here and not in device-quirks because it must be called after gamescope has started.
-if [[ ":Galileo:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "Galileo" ]; then
   if command -v galileo-mura-setup > /dev/null; then
     galileo-mura-setup &
   fi
@@ -348,7 +354,8 @@ else
   $CLIENTCMD
 fi
 
-if [[ "$SECONDS" -lt "$short_session_duration" ]]; then
+short_session_elapsed=$(( $(date +%s) - short_session_start ))
+if [ "$short_session_elapsed" -lt "$short_session_duration" ]; then
 	echo "${CLIENT} failed" >>"$short_session_tracker_file"
 else
 	rm "$short_session_tracker_file"
@@ -359,40 +366,49 @@ post_client_shutdown
 # When the client exits, kill gamescope nicely
 kill $gamescope_pid
 
-# Start a background sleep for five seconds because we don't trust it
-sleep 5 &
+# Start a background timer for five seconds because we don't trust it
+timer_fired=0
+trap 'timer_fired=1' ALRM
+( sleep 5; kill -ALRM $$ ) &
 sleep_pid="$!"
 
 # Catch reboot and powerof sentinels here
-if [[ -e "$REBOOT_SENTINEL" ]]; then
+if [ -e "$REBOOT_SENTINEL" ]; then
 	rm -f "$REBOOT_SENTINEL"
 	# rearm short session tracker
 	rm "$short_session_tracker_file"
 	reboot
 fi
-if [[ -e "$SHUTDOWN_SENTINEL" ]]; then
+if [ -e "$SHUTDOWN_SENTINEL" ]; then
 	rm -f "$SHUTDOWN_SENTINEL"
 	# rearm short session tracker
 	rm "$short_session_tracker_file"
 	poweroff
 fi
 
-# Wait for gamescope or the sleep to finish for timeout purposes
+# Wait for gamescope or the timer to finish for timeout purposes
 ret=0
-wait -n $gamescope_pid $sleep_pid || ret=$?
+if [ "$timer_fired" -eq 0 ]; then
+	wait "$gamescope_pid" 2>/dev/null || ret=$?
+fi
+kill "$sleep_pid" 2>/dev/null
+trap - ALRM
 
 # If we get a SIGTERM/etc while waiting this happens.  Proceed to kill -9 everything but complain
-if [[ $ret = 127 ]]; then
+if [ "$ret" = 127 ]; then
 	echo >&2 "gamescope-session-plus: Interrupted while waiting on teardown, force-killing remaining tasks"
 fi
 
 # Kill all remaining jobs and warn if unexpected things are in there (should be just sleep_pid, unless gamescope failed
 # to exit in time or we hit the interrupt case above)
 for job in $(jobs -p); do
+	if ! kill -0 "$job" 2>/dev/null; then
+		continue
+	fi
 	# Warn about unexpected things
-	if [[ $ret != 127 && $job = "$gamescope_pid" ]]; then
+	if [ "$ret" != 127 ] && [ "$job" = "$gamescope_pid" ]; then
 		echo >&2 "gamescope-session-plus: gamescope timed out while exiting, killing"
-	elif [[ $ret != 127 && $job != "$sleep_pid" ]]; then
+	elif [ "$ret" != 127 ] && [ "$job" != "$sleep_pid" ]; then
 		echo >&2 "gamescope-session-plus: unexpected background pid $job at teardown: "
 		# spew some debug about it
 		ps -p "$job" >&2
