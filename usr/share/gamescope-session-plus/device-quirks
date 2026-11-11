@@ -6,10 +6,17 @@ DT_PATH=/sys/firmware/devicetree/base/model
 SYS_ID="$([ -f $DMI_PATH ] && cat $DMI_PATH || [ -f $DT_PATH ] && tr -d '\0' <$DT_PATH)"
 CPU_VENDOR="$(lscpu | grep "Vendor ID" | cut -d : -f 2 | xargs)"
 
+quirks_in_list() {
+  case ":$1:" in
+    *":$2:"*) return 0 ;;
+  esac
+  return 1
+}
+
 # OXP 60Hz Devices
 OXP_LIST="ONE XPLAYER:ONEXPLAYER 1 T08:ONEXPLAYER 1S A08:ONEXPLAYER 1S T08:ONEXPLAYER mini A07:ONEXPLAYER mini GA72:ONEXPLAYER mini GT72:ONEXPLAYER Mini Pro:ONEXPLAYER GUNDAM GA72:ONEXPLAYER 2 ARP23:ONEXPLAYER 2 PRO ARP23H:ONEXPLAYER 2 PRO ARP23P:ONEXPLAYER 2 PRO ARP23P EVA-01"
 AOK_LIST="AOKZOE A1 AR07:AOKZOE A1 Pro"
-if [[ ":$OXP_LIST:" =~ ":$SYS_ID:"  ]] || [[  ":$AOK_LIST:" =~ ":$SYS_ID:"   ]]; then
+if quirks_in_list "$OXP_LIST" "$SYS_ID" || quirks_in_list "$AOK_LIST" "$SYS_ID"; then
   DRM_MODE=fixed
   PANEL_TYPE=external
   ORIENTATION=left
@@ -20,7 +27,7 @@ fi
 
 # OXP 120Hz Devices
 OXP_120_LIST="ONEXPLAYER F1:ONEXPLAYER F1 EVA-01"
-if [[ ":$OXP_120_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$OXP_120_LIST" "$SYS_ID"; then
   PANEL_TYPE=internal
   ORIENTATION=left
 
@@ -30,7 +37,7 @@ fi
 
 # OXP X1 Devices (Intel, including the X1 Air and X1Pro EVA-02 which use the same portrait panel)
 OXP_X1_LIST="ONEXPLAYER X1 i:ONEXPLAYER X1Air:ONEXPLAYER X1Pro EVA-02"
-if [[ ":$OXP_X1_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$OXP_X1_LIST" "$SYS_ID"; then
   PANEL_TYPE=internal
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
@@ -40,7 +47,7 @@ if [[ ":$OXP_X1_LIST:" =~ ":$SYS_ID:"  ]]; then
 fi
 
 OXP_X1_LIST="ONEXPLAYER X1 A"
-if [[ ":$OXP_X1_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$OXP_X1_LIST" "$SYS_ID"; then
   PANEL_TYPE=external
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
@@ -51,7 +58,7 @@ fi
 
 # OXP X1 144Hz Devices
 OXP_X1_144_LIST="ONEXPLAYER X1 mini"
-if [[ ":$OXP_X1_144_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$OXP_X1_144_LIST" "$SYS_ID"; then
   PANEL_TYPE=external
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,144
@@ -61,7 +68,7 @@ if [[ ":$OXP_X1_144_LIST:" =~ ":$SYS_ID:"  ]]; then
 fi
 
 # OXP G1 Devices
-if [[ ":$SYS_ID:" =~ :ONEXPLAYER\ G1\ (A|i): ]]; then
+if [ "$SYS_ID" = "ONEXPLAYER G1 A" ] || [ "$SYS_ID" = "ONEXPLAYER G1 i" ]; then
   PANEL_TYPE=internal
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,144
@@ -72,19 +79,19 @@ fi
 
 # AYANEO AIR and SLIDE
 AIR_LIST="AIR:AIR Pro:AIR Plus:SLIDE:"
-if [[ ":$AIR_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$AIR_LIST" "$SYS_ID"; then
   PANEL_TYPE=internal
   ORIENTATION=left
 fi
 
 # AYANEO FLIP Keyboard
-if [[ ":FLIP KB:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "FLIP KB" ]; then
   PANEL_TYPE=internal
   ORIENTATION=left
 fi
 
 # AYANEO FLIP Dual Screen
-if [[ ":FLIP DS:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "FLIP DS" ]; then
   PANEL_TYPE=internal
   ORIENTATION=left
   OUTPUT_CONNECTOR='*,eDP-1,eDP-2' # prefer the top screen
@@ -92,7 +99,7 @@ fi
 
 # AYN Loki Devices
 AYN_LIST="Loki Max:Loki Zero:Loki MiniPro"
-if [[ ":$AYN_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$AYN_LIST" "$SYS_ID"; then
   DRM_MODE=fixed
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=40,50,60
@@ -103,7 +110,7 @@ fi
 
 # GDP Win devices
 GDP_LIST="G1619-01:G1621-02:MicroPC:WIN2"
-if [[ ":$GDP_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$GDP_LIST" "$SYS_ID"; then
   OUTPUT_CONNECTOR='*,DSI-1'
   DRM_MODE=fixed
   ORIENTATION=right
@@ -112,14 +119,14 @@ fi
 # GPD Win 3 specifc quirk to prevent crashing
   # The GPD Win 3 does not support hardware rotation for 270/90 modes. We need to implement shader rotations to get this working correctly.
   # 0/180 rotations should work.
-if [[ ":G1618-03:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "G1618-03" ]; then
   OUTPUT_CONNECTOR='*,DSI-1'
   DRM_MODE=fixed
   ORIENTATION=right
 fi
 
 #GPD Win 4 supports 40-60hz refresh rate changing
-if [[ ":G1618-04:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "G1618-04" ]; then
   ORIENTATION=""
   # Support for custom display firmware flash that disables the landscape screen rotation (which adds input latency)
   if ( xrandr --prop 2>$1 | grep -e "1080x1920 " > /dev/null ) ; then
@@ -130,13 +137,13 @@ if [[ ":G1618-04:" =~ ":$SYS_ID:"  ]]; then
 fi
 
 # GPD Win Max 2 supports 40,60hz
-if [[ ":G1619-04:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "G1619-04" ]; then
   CUSTOM_REFRESH_RATES=40,60
   export STEAM_DISPLAY_REFRESH_LIMITS=40,60
 fi
 
 # GPD Win mini
-if [[ ":G1617-01:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "G1617-01" ]; then
   ORIENTATION=""
   if ( xrandr --prop 2>$1 | grep -e "1080x1920 " > /dev/null ) ; then
      ORIENTATION=right
@@ -144,7 +151,7 @@ if [[ ":G1617-01:" =~ ":$SYS_ID:"  ]]; then
 fi
 
 # Steam Deck (Common)
-if [[ ":Jupiter:Galileo:" =~ ":$SYS_ID:" ]]; then
+if quirks_in_list "Jupiter:Galileo" "$SYS_ID"; then
   DRM_MODE=fixed
 
   # Enables the adaptive brightness toggle
@@ -154,7 +161,7 @@ if [[ ":Jupiter:Galileo:" =~ ":$SYS_ID:" ]]; then
   # Sets CPU topology for Steam Deck hardware
   export WINE_CPU_TOPOLOGY=8:0,1,2,3,4,5,6,7
 
-  function inhibit_systemd {
+  inhibit_systemd() {
     # Prevent default power button behavior
     systemd-inhibit --what=handle-suspend-key:handle-power-key:handle-hibernate-key --who=gamescope-session --why="gamescope-session handles power button events" sleep infinity &
   }
@@ -174,7 +181,7 @@ if [[ ":Jupiter:Galileo:" =~ ":$SYS_ID:" ]]; then
 fi
 
 # Steam Deck (LCD)
-if [[ ":Jupiter:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "Jupiter" ]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=40,60
 
   if [ -f "/usr/share/plymouth/themes/steamos/steamos-jupiter.png" ]; then
@@ -183,7 +190,7 @@ if [[ ":Jupiter:" =~ ":$SYS_ID:" ]]; then
 fi
 
 # Steam Deck (OLED)
-if [[ ":Galileo:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "Galileo" ]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=45,90
 
   export STEAM_GAMESCOPE_FORCE_HDR_DEFAULT=1
@@ -197,7 +204,7 @@ fi
 
 # ROG Ally & ROG Ally X
 ALLY_LIST="ROG Ally RC71L_RC71L:ROG Ally RC71L:ROG Ally X RC72LA"
-if [[ ":$ALLY_LIST:" =~ ":$SYS_ID:"  ]]; then
+if quirks_in_list "$ALLY_LIST" "$SYS_ID"; then
   ADAPTIVE_SYNC=1
 
   # Set refresh rate range and enable refresh rate switching
@@ -205,7 +212,7 @@ if [[ ":$ALLY_LIST:" =~ ":$SYS_ID:"  ]]; then
 fi
 
 # Lenovo Legion Go
-if [[ ":83E1:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "83E1" ]; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,144
 
@@ -214,7 +221,7 @@ if [[ ":83E1:" =~ ":$SYS_ID:"  ]]; then
 fi
 
 # Minisforum V3
-if [[ ":V3:" =~ ":$SYS_ID:"  ]]; then
+if [ "$SYS_ID" = "V3" ]; then
   PANEL_TYPE=external
   ADAPTIVE_SYNC=1
 
@@ -225,8 +232,8 @@ fi
 # XG mobile for ASUS laptops that supports the proprietary connector
 xg_mobile_file_path="/sys/devices/virtual/firmware-attributes/asus-armoury/attributes/egpu_enable/current_value"
 if [ -f "$xg_mobile_file_path" ]; then
-  egpu_status=$(<"$xg_mobile_file_path")
-  if [[ "$egpu_status" -ne 0 ]]; then
+  egpu_status=$(cat "$xg_mobile_file_path")
+  if [ "$egpu_status" -ne 0 ]; then
     unset STEAM_DISPLAY_REFRESH_LIMITS
 
     # XG Mobile 2023: NVIDIA 4090
@@ -246,7 +253,7 @@ if [ -f "$xg_mobile_file_path" ]; then
   fi
 fi
 
-if [[ ":AYANEO Pocket ACE:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYANEO Pocket ACE" ]; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -254,7 +261,7 @@ if [[ ":AYANEO Pocket ACE:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
 
-if [[ ":AYANEO Pocket DMG:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYANEO Pocket DMG" ]; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -263,7 +270,7 @@ if [[ ":AYANEO Pocket DMG:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
 
-if [[ ":AYANEO Pocket DS:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYANEO Pocket DS" ]; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
   # Prefer top screen
@@ -272,7 +279,7 @@ if [[ ":AYANEO Pocket DS:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
 
-if [[ ":AYANEO Pocket EVO:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYANEO Pocket EVO" ]; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -280,7 +287,7 @@ if [[ ":AYANEO Pocket EVO:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
 
-if [[ ":AYANEO Pocket S2:AYANEO Pocket S 2K:" =~ ":$SYS_ID:" ]]; then
+if quirks_in_list "AYANEO Pocket S2:AYANEO Pocket S 2K" "$SYS_ID"; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -288,7 +295,7 @@ if [[ ":AYANEO Pocket S2:AYANEO Pocket S 2K:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
 
-if [[ ":AYN Odin 2:AYN Odin 2 Mini:" =~ ":$SYS_ID:" ]]; then
+if quirks_in_list "AYN Odin 2:AYN Odin 2 Mini" "$SYS_ID"; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -297,7 +304,7 @@ if [[ ":AYN Odin 2:AYN Odin 2 Mini:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
 
-if [[ ":AYN Odin 2 Portal:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYN Odin 2 Portal" ]; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -305,7 +312,7 @@ if [[ ":AYN Odin 2 Portal:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
 
-if [[ ":AYN Odin 3:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYN Odin 3" ]; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60,120
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -314,7 +321,7 @@ if [[ ":AYN Odin 3:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
 
-if [[ ":AYN Thor:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "AYN Thor" ]; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60,120
   # Prefer top screen
@@ -324,7 +331,7 @@ if [[ ":AYN Thor:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
 
-if [[ ":KONKR Pocket FIT Elite:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "KONKR Pocket FIT Elite" ]; then
   ORIENTATION=right
   OUTPUT_CONNECTOR='*,DSI-1'
   CUSTOM_REFRESH_RATES=60,90,120,144
@@ -333,7 +340,7 @@ if [[ ":KONKR Pocket FIT Elite:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,90,120,144
 fi
 
-if [[ ":KONKR Pocket FIT:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "KONKR Pocket FIT" ]; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60,90,120,144
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -342,7 +349,7 @@ if [[ ":KONKR Pocket FIT:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,90,120,144
 fi
 
-if [[ ":Retroid Pocket 5:Retroid Pocket Flip2:" =~ ":$SYS_ID:" ]]; then
+if quirks_in_list "Retroid Pocket 5:Retroid Pocket Flip2" "$SYS_ID"; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -351,7 +358,7 @@ if [[ ":Retroid Pocket 5:Retroid Pocket Flip2:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
 
-if [[ ":Retroid Pocket 6:Retroid Pocket 6 TOP-DPAD:" =~ ":$SYS_ID:" ]]; then
+if quirks_in_list "Retroid Pocket 6:Retroid Pocket 6 TOP-DPAD" "$SYS_ID"; then
   ORIENTATION=left
   CUSTOM_REFRESH_RATES=60,120
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -360,7 +367,7 @@ if [[ ":Retroid Pocket 6:Retroid Pocket 6 TOP-DPAD:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60,120
 fi
 
-if [[ ":Retroid Pocket Mini:Retroid Pocket Mini V2:" =~ ":$SYS_ID:" ]]; then
+if quirks_in_list "Retroid Pocket Mini:Retroid Pocket Mini V2" "$SYS_ID"; then
   ORIENTATION=right
   CUSTOM_REFRESH_RATES=60
   OUTPUT_CONNECTOR='*,DSI-1'
@@ -369,7 +376,7 @@ if [[ ":Retroid Pocket Mini:Retroid Pocket Mini V2:" =~ ":$SYS_ID:" ]]; then
   export STEAM_DISPLAY_REFRESH_LIMITS=60
 fi
 
-if [[ ":Retroid Pocket Nova:" =~ ":$SYS_ID:" ]]; then
+if [ "$SYS_ID" = "Retroid Pocket Nova" ]; then
   OUTPUT_CONNECTOR='*,DSI-1'
   CUSTOM_REFRESH_RATES=60,120
   FAKE_OUTPUT_MM=177x100
